@@ -1,0 +1,12 @@
+https://www.google.com
+https://www.wikipedia.org
+https://www.github.com
+https://www.microsoft.com
+https://www.apple.com
+https://www.amazon.com
+https://www.cloudflare.com
+https://www.gnu.org
+https://www.kernel.org
+https://www.python.org
+https://www.mozilla.org
+https://www.apache.org
