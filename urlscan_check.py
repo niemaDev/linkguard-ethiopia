@@ -135,9 +135,9 @@ def main():
         print(f"Categories: {', '.join(categories)}")
 
     if malicious:
-        print("\n⚠️  urlscan.io flagged this as malicious.")
+        print("\n  urlscan.io flagged this as malicious.")
     else:
-        print("\n✅  urlscan.io did not flag this as malicious.")
+        print("\n  urlscan.io did not flag this as malicious.")
 
 
 if __name__ == "__main__":
