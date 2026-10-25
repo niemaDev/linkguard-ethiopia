@@ -212,7 +212,7 @@ python3 -c "import getpass; from werkzeug.security import generate_password_hash
 python3 app.py
 ```
 
-Open http://127.0.0.1:5000. Moderators log in at http://127.0.0.1:5000/admin. The database tables are created automatically on first start.
+Open http://127.0.0.1:5000. admin log in at http://127.0.0.1:5000/admin/login. The database tables are created automatically on first start.
 
 ### Forgot the admin password?
 
