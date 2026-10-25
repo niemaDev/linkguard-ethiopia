@@ -76,7 +76,7 @@ Reports are not published automatically. A moderator reviews them first, so the 
 Moderators log in at `/admin`. If the admin secrets are missing, the admin area stays disabled, and five wrong passwords lock a visitor out for 15 minutes.
 
 ![Admin login page](screenshots/10-admin-login.png)
-![Admin login page1](screenshots/admin-page.png)
+![Admin login page1](screenshots/admin-login-page.png)
 
 ### Running on the Kali Linux virtual machine
 The project was built and tested inside an isolated Kali Linux virtual machine.
