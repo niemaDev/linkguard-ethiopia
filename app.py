@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-LinkGuard Ethiopia — Web Interface
---------------------------------------
 Usage:
     python3 app.py
     Then open http://127.0.0.1:5000 in a browser.
@@ -191,7 +189,7 @@ def short_time(value):
     return f"{value[:16]} UTC" if value else ""
 
 
-# ---------- Community reports and moderation ----------
+#  Community reports and moderation 
 
 def get_reporter_id(salt):
     """Anonymous visitor ID: a salted hash of the visitor's IP address (the raw IP is never stored)."""
@@ -303,7 +301,7 @@ def get_reviewed_links(limit=ADMIN_PAGE_LIMIT):
     ]
 
 
-# ---------- Admin security ----------
+# Admin security 
 
 def admin_is_configured():
     return bool(get_secret("SECRET_KEY") and get_secret("ADMIN_PASSWORD_HASH"))
@@ -349,7 +347,7 @@ def admin_required(view):
     return wrapper
 
 
-# ---------- Threat-intelligence checks ----------
+# Threat-intelligence checks
 
 def run_check(check_fn, *args):
     """Run one threat-intel check; if the network fails, return 'no data' instead of crashing."""
@@ -395,7 +393,20 @@ def check_urlscan(url, api_key):
 
     submit_resp = requests.post(f"{URLSCAN_BASE}/scan/", headers=headers, json=payload)
     if submit_resp.status_code != 200:
-        return {"available": False, "reason": f"submission failed ({submit_resp.status_code})"}
+        try:
+            detail = submit_resp.json().get("description", "")
+        except ValueError:
+            detail = ""
+        if submit_resp.status_code == 400 and "blocked from scanning" in detail:
+            return {
+                "available": False,
+                "blocked": True,
+                "reason": "urlscan.io does not allow scanning this site",
+            }
+        return {
+            "available": False,
+            "reason": f"submission failed ({submit_resp.status_code}) {detail}"[:150],
+        }
 
     scan_uuid = submit_resp.json()["uuid"]
     time.sleep(URLSCAN_INITIAL_WAIT)
@@ -523,7 +534,7 @@ def compute_risk_score(vt_result, urlscan_result, safe_browsing_result, report_c
     return score, band, reasons
 
 
-# ---------- Pages ----------
+#  Pages 
 
 BASE_CSS = """
   body {
@@ -620,7 +631,7 @@ PAGE_TEMPLATE = """
     <p class="score">{{ result.score }}/100</p>
     <p class="band">{{ result.band }}</p>
     {% if result.missing %}
-    <p class="warning">⚠️ Incomplete scan: {{ result.missing|join(', ') }} could not be checked, so this result may be missing threats.</p>
+    <p class="warning"> Incomplete scan: {{ result.missing|join(', ') }} could not be checked, so this result may be missing threats.</p>
     {% endif %}
     <p class="checked">Checked: {{ url }}</p>
     <ul>
@@ -789,7 +800,7 @@ ADMIN_TEMPLATE = """
 """
 
 
-# ---------- Public routes ----------
+# Public routes 
 
 @app.route("/", methods=["GET"])
 def index():
@@ -827,18 +838,23 @@ def scan():
     urlscan_result = run_check(check_urlscan, target_url, urlscan_key)
     safe_browsing_result = run_check(check_safe_browsing, target_url, safe_browsing_key)
 
-    # Reports on a link a moderator rejected are ignored, so spam can't raise its score.
+    # Only reports a moderator approved count toward the score.
     review_status = get_review_status(target_url)
     raw_report_count = get_report_count(target_url)
-    report_count = 0 if review_status == "rejected" else raw_report_count
+    report_count = raw_report_count if review_status == "approved" else 0
 
     score, band, reasons = compute_risk_score(
         vt_result, urlscan_result, safe_browsing_result, report_count
     )
-    if review_status == "rejected" and raw_report_count > 0:
-        reasons.append("Community: reports on this link were reviewed by a moderator and not counted")
+    if raw_report_count > 0 and review_status != "approved":
+        if review_status == "rejected":
+            reasons.append("Community: reports on this link were reviewed by a moderator and not counted")
+        else:
+            reasons.append("Community: reports are waiting for moderator review and are not counted yet")
 
     missing = find_missing_sources(vt_result, urlscan_result, safe_browsing_result)
+    if urlscan_result.get("blocked"):
+        missing = [name for name in missing if name != "urlscan.io"]
     if missing and band == "Safe":
         band = "Unverified"
 
@@ -871,7 +887,7 @@ def report():
     return render_template_string(PAGE_TEMPLATE, url=shown_url, result=None, notice=notice)
 
 
-# ---------- Admin routes ----------
+#  Admin routes 
 
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
